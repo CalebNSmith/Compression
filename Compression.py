@@ -2,12 +2,38 @@ from __future__ import generators
 import Points
 import math
 
-#given a point, the left-most point, the bottom-most point, and epsilon given a point back corresponding to grid slot
-#e.g. given (3, 5) would mean grid[3][5]
+# Given a point, the left-most point, the bottom-most point, and epsilon given a point back corresponding to grid slot
+# e.g. given (3, 5) would mean grid[3][5]
 def find_bucket(point, left, bottom, epsilon):
+    """[summary]
+    
+    [description]
+    
+    Arguments:
+        point {[type]} -- [description]
+        left {[type]} -- [description]
+        bottom {[type]} -- [description]
+        epsilon {[type]} -- [description]
+    """
     return [math.floor(point[0] - (left[0] - 4 * epsilon)), math.floor(point[1] - (bottom[1] - 4 * epsilon))]
 
+
 def extend_left(point1, point2, epsilon, points, grid):
+    """[summary]
+    
+    [description]
+    
+    Arguments:
+        point1 {[type]} -- [description]
+        point2 {[type]} -- [description]
+        epsilon {[type]} -- [description]
+        points {[type]} -- [description]
+        grid {[type]} -- [description]
+    
+    Returns:
+        [type] -- [description]
+    """
+
     x_difference = point2[0] - point1[0]
     if x_difference == 0:
         x_difference = 1
@@ -27,6 +53,20 @@ def extend_left(point1, point2, epsilon, points, grid):
     return points_found
 
 def extend_right(point1, point2, epsilon, points, grid):
+    """[summary]
+    
+    [description]
+    
+    Arguments:
+        point1 {[type]} -- [description]
+        point2 {[type]} -- [description]
+        epsilon {[type]} -- [description]
+        points {[type]} -- [description]
+        grid {[type]} -- [description]
+    
+    Returns:
+        [type] -- [description]
+    """
     x_difference = point2[0] - point1[0]
     if x_difference == 0:
         x_difference = 1
@@ -46,6 +86,17 @@ def extend_right(point1, point2, epsilon, points, grid):
     return points_found
 
 def check_distance(points, epsilon):
+    """[summary]
+    
+    [description]
+    
+    Arguments:
+        points {[type]} -- [description]
+        epsilon {[type]} -- [description]
+    
+    Returns:
+        bool -- [description]
+    """
     for point1 in points:
         for point2 in points:
             if point1 == point2:
@@ -55,7 +106,24 @@ def check_distance(points, epsilon):
     return False
 
 def distance(point1, point2):
+    """[summary]
+    
+    [description]
+    
+    Arguments:
+        point1 {[type]} -- [description]
+        point2 {[type]} -- [description]
+    
+    Returns:
+        [type] -- [description]
+    """
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
+
+
+
+
+
+
 
 epsilon = float(1/8)
 points = Points.generatePoints(50, 0, 30, 0, 30)
