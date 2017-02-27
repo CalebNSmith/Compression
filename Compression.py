@@ -16,58 +16,8 @@ def find_bucket(point, left, bottom, epsilon):
         bottom {list of integers} -- The bottommost point in the dataset, retrived from Points.get_bottom_point
         epsilon {float} -- Degree of error
     """
-    return [math.floor(point[0] - (left[0] - 4 * epsilon)), math.floor(point[1] - (bottom[1] - 4 * epsilon))]
+    return [int((point[0] - (left[0] - 4 * epsilon))), int((point[1] - (bottom[1] - 4 * epsilon)))]
 
-
-def extend_left(point1, point2, epsilon, points, grid):
-    """[summary]
-    
-    [description]
-    
-    Arguments:
-        point1 {[type]} -- [description]
-        point2 {[type]} -- [description]
-        epsilon {[type]} -- [description]
-        points {[type]} -- [description]
-        grid {[type]} -- [description]
-    
-    Returns:
-        [type] -- [description]
-    """
-
-    x_difference = point2[0] - point1[0]
-    if x_difference == 0:
-        x_difference = 1
-    slope = float((point2[1] - point1[1]) / x_difference)
-    point3 = [point2[0] - math.fabs(x_difference), slope * x_difference + point2[1]]
-    bucket = find_bucket(point3, Points.get_left_point(points), Points.get_bottom_point(points), epsilon)
-    points_found = []
-    for x in range(-1, 2):
-        for y in range(-1, 2):
-            try:
-                slot = grid[bucket[0] + x][bucket[1] + y]
-                for point in slot:
-                    if math.sqrt((point[1] - point3[1]) ** 2 + (point[0] - point3[0]) ** 2) <= 8 * epsilon:
-                        points_found.append(point3)
-            except IndexError:
-                continue    points_found = [point1, point2]
-    more_points = True
-    while(more_points):
-        first = points_found[len(points_found - 1)]
-        second = points_found[len(points_found - 2)]
-        x_difference = first[0] - second[0]
-        if x_difference == 0:
-            x_difference = 1
-        slope = float((second[1] - first[1]) / x_difference)
-        point3 = [second[0] - math.fabs(x_difference), slope * x_difference + second[1]]
-        bucket = find_bucket(point3, Points.get_left_point(points), Points.get_bottom_point(points), epsilon)
-        distance = [math.fabs(first[0] - second[0]), math.fabs(first[1] - second[1])]
-        for x in range(-1, 2):
-            for y in range(-1, 2):
-                try:
-
-                except IndexError:
-                    continue    return points_found
 
 def extend_right(point1, point2, epsilon, points, grid):
     """[summary]
@@ -84,23 +34,115 @@ def extend_right(point1, point2, epsilon, points, grid):
     Returns:
         [type] -- [description]
     """
-    x_difference = point2[0] - point1[0]
-    if x_difference == 0:
-        x_difference = 1
-    slope = float((point2[1] - point1[1]) / x_difference)
-    point3 = [point2[0] + math.fabs(x_difference), slope * x_difference + point2[1]]
-    bucket = find_bucket(point3, Points.get_left_point(points), Points.get_bottom_point(points), epsilon)
-    points_found = []
-    for x in range(-1, 2):
-        for y in range(-1, 2):
-            try:
-                slot = grid[bucket[0] + x][bucket[1] + y]
-                for point in slot:
-                    if math.sqrt((point[1] - point3[1]) ** 2 + (point[0] - point3[0]) ** 2) <= 8 * epsilon:
-                        points_found.append(point3)
-            except IndexError:
-                continue
-    return points_found
+    canExtend = True
+    starting_points = [point1, point2]
+    while(canExtend):
+        ideal_point = [starting_points[-1][0] + math.fabs((starting_points[-1][0] - starting_points[-2][0])), starting_points[-1][1] + math.fabs((starting_points[-1][1] - starting_points[-2][1]))]
+        bucket = find_bucket(ideal_point, Points.get_left_point(points), Points.get_bottom_point(points), epsilon)
+        numPoints = len(starting_points)
+        for x in range(-1, 2):
+            for y in range(-1, 2):
+                if numPoints < len(starting_points):
+                    continue
+                try:
+                    slot = grid[bucket[0] + x][bucket[1] + y]
+                    for point in slot:
+                        if point in starting_points:
+                            continue
+                        if math.fabs(point[0] - ideal_point[0]) <= 4 * epsilon and math.fabs(point[1] - ideal_point[1]) <= 4 * epsilon:
+                            c = [0, 0, epsilon]
+                            A = []
+                            b = []
+                            for i in range(len(starting_points)): #two bounds for each point
+                                A.append([starting_points[i][0], 1, -1])
+                                b.append(starting_points[i][1])
+                                A.append([-starting_points[i][0], -1, -1])
+                                b.append(-starting_points[i][1])
+                            A.append([point[0], 1, -1])
+                            b.append(point[1])
+                            A.append([-point[0], -1, -1])
+                            b.append(-point[1])
+                            res = linprog(c, A_ub=A, b_ub=b, options={"disp":True})
+                            if res.success and float(res.x[-1]) <= epsilon:
+                                    starting_points.append(point)
+
+                except IndexError as err: #avoid out of bounds on the boundry of the grid
+                    # print(str(bucket[0]))
+                    # print(str(bucket[1]))
+                    # print(len(grid))
+                    # print(len(grid[0]))
+                    # print("ERRRRR")
+                    continue
+        if numPoints < len(starting_points):
+            canExtend = True
+        else:
+            canExtend = False
+    return starting_points
+
+
+
+
+
+def extend_left(point1, point2, epsilon, points, grid):
+    """[summary]
+
+    [description]
+
+    Arguments:
+        point1 {[type]} -- [description]
+        point2 {[type]} -- [description]
+        epsilon {[type]} -- [description]
+        points {[type]} -- [description]
+        grid {[type]} -- [description]
+
+    Returns:
+        [type] -- [description]
+    """
+    canExtend = True
+    starting_points = [point1, point2]
+    while(canExtend):
+        ideal_point = [starting_points[-1][0] - math.fabs((starting_points[-1][0] - starting_points[-2][0])), starting_points[-1][1] - math.fabs((starting_points[-1][1] - starting_points[-2][1]))]
+        bucket = find_bucket(ideal_point, Points.get_left_point(points), Points.get_bottom_point(points), epsilon)
+        numPoints = len(starting_points)
+        for x in range(-1, 2):
+            for y in range(-1, 2):
+                if numPoints < len(starting_points):
+                    continue
+                try:
+                    slot = grid[bucket[0] + x][bucket[1] + y]
+                    for point in slot:
+                        if point in starting_points:
+                            continue
+                        if math.fabs(point[0] - ideal_point[0]) <= 4 * epsilon and math.fabs(point[1] - ideal_point[1]) <= 4 * epsilon:
+                            c = [0, 0, epsilon]
+                            A = []
+                            b = []
+                            for i in range(len(starting_points)): #two bounds for each point
+                                A.append([starting_points[i][0], 1, -1])
+                                b.append(starting_points[i][1])
+                                A.append([-starting_points[i][0], -1, -1])
+                                b.append(-starting_points[i][1])
+                            A.append([point[0], 1, -1])
+                            b.append(point[1])
+                            A.append([-point[0], -1, -1])
+                            b.append(-point[1])
+                            res = linprog(c, A_ub=A, b_ub=b, options={"disp":True})
+                            if res.success and float(res.x[-1]) <= epsilon:
+                                    starting_points.append(point)
+
+                except IndexError as err: #avoid out of bounds on the boundry of the grid
+                    # print(str(bucket[0]))
+                    # print(str(bucket[1]))
+                    # print(len(grid))
+                    # print(len(grid[0]))
+                    # print("ERRRRR")
+                    continue
+        if numPoints < len(starting_points):
+            canExtend = True
+        else:
+            canExtend = False
+    return starting_points
+
 
 def check_distance(points, epsilon):
     """Returns true if any two points are within 8*epsilon of each other
@@ -134,21 +176,16 @@ def distance(point1, point2):
     return math.sqrt((point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2)
 
 
-
-
-
-
-
 epsilon = float(1/8)
-points = Points.generatePoints(50, 0, 30, 0, 30)
+points = Points.generatePoints(75, 0, 30, 0, 30)
 while(check_distance(points, epsilon)):
-    points = Points.generatePoints(50, -30, 30, -30, 30)
+    points = Points.generatePoints(75, 0, 30, 0, 30)
 #points = [[4,2], [2,2], [0,2], [4, 4], [2, 4], [0, 4]]
 grid = []
 
 #calculate how many grid blocks there are in each dimension
-width = (Points.get_right_point(points)[0] - (Points.get_left_point(points)[0] - 4 * epsilon)) / (8 * epsilon)
-height = (Points.get_top_point(points)[1] - (Points.get_bottom_point(points)[1] - 4 * epsilon)) / (8 * epsilon)
+width = (Points.get_right_point(points)[0] + 4 * epsilon - (Points.get_left_point(points)[0] - 4 * epsilon)) / (8 * epsilon)
+height = (Points.get_top_point(points)[1] + 4 * epsilon - (Points.get_bottom_point(points)[1] - 4 * epsilon)) / (8 * epsilon)
 
 #create the grid
 for x in range(math.ceil(width)):
@@ -163,50 +200,27 @@ bottom = Points.get_bottom_point(points)[1] - 4 * epsilon
 for point in points:
     first = math.floor(point[0] - left)
     second = math.floor(point[1] - bottom)
-    grid[first][second].append(point)
+    try:
+        bucket = find_bucket(point, Points.get_left_point(points), Points.get_bottom_point(points), epsilon)
+        grid[bucket[0]][bucket[1]].append(point)
+    except IndexError as err:
+        print(len(grid))
+        print(first)
+        print(len(grid[0]))
+        print(second)
 
-#extension process
-sequences = []
-for first in points:
-    for second in points:
-        if first[0] < second[0] or first == second:
-            continue
-        subsequence_left = [first, second]
-        left = extend_left(subsequence_left[len(subsequence_left) - 2], subsequence_left[len(subsequence_left) - 1], epsilon, points, grid)
-        while len(left) != 0:
-            if len(left) > 1:
-                print("EXTEND LEFT FOUND MORE THAN 1")
-            subsequence_left.append(left[0])
-            left = extend_left(subsequence_left[len(subsequence_left) - 2], subsequence_left[len(subsequence_left) - 1], epsilon, points, grid)
-
-        subsequence_right = [second, first]
-        right = extend_right(subsequence_right[len(subsequence_right) - 2], subsequence_right[len(subsequence_right) - 1], epsilon, points, grid)
-        while len(right) != 0:
-            if len(right) > 1:
-                print("EXTEND RIGHT FOUND MORE THAN 1")
-            subsequence_right.append(right[0])
-            right = extend_right(subsequence_right[len(subsequence_right) - 2], subsequence_right[len(subsequence_right) - 1], epsilon, points, grid)
-        subsequence = []
-        for l in subsequence_left:
-            if l not in subsequence:
-                subsequence.append(l)
-        for r in subsequence_right:
-            if r not in subsequence:
-                subsequence.append(r)
-        subsequence.sort(key= lambda point: point[0])
-        if len(subsequence) > 2 and subsequence not in sequences:
-            sequences.append(subsequence)
-print(sequences)
-
-print("\n\n\n\n\n")
-c = []
-A = [[-3, 1], [1, 2]]
-b = [6, 4]
-x0_bounds = (None, None)
-x1_bounds = (-3, None)
-res = linprog(c, A_ub=A, b_ub=b, bounds=(x0_bounds, x1_bounds),
-              options={"disp": False})
-
-
-
-print(res)
+extend = []
+for i in points:
+    for j in points:
+        if i is not j:
+            right = extend_right(i, j, epsilon, points, grid)
+            left = extend_left(i, j, epsilon, points, grid)
+            combined = []
+            for k in range(len(left) - 1, 1, -1):
+                combined.append(left[k])
+            for k in range(len(right)):
+                combined.append(right[k])
+            extend.append(combined)
+for e in extend:
+    if len(e) > 3:
+        print(e)
