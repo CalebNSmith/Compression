@@ -15,7 +15,7 @@ def generatePoints(num, x1, x2, y1, y2):
     """
     points = []
     while(len(points) < num):
-        point = [random.randint(x1, x2), random.randint(y1, y2)]
+        point = [random.randint(x1, x2) + random.randint(-1, 1) * random.randint(0, 2) / 2.0, random.randint(y1, y2) + random.randint(-1, 1) * random.randint(0, 2) / 2.0]
         if point not in points:
             points.append(point)
     return points
